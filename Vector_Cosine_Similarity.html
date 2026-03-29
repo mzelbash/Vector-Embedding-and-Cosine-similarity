@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Cosine Similarity | Interactive</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    color: #1e293b;
+    background: #f8fafc;
+    padding: 24px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  .page-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 22px 28px 18px;
+    margin-bottom: 24px;
+  }
+  .page-header h1 { font-size: 1.55em; font-weight: 800; margin-bottom: 4px; }
+  .page-header .subtitle { font-size: 0.92em; opacity: 0.88; }
+  .page-header .author  { font-size: 0.82em; opacity: 0.72; margin-top: 8px; }
+
+  /* SECTIONS */
+  .section {
+    background: white;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .section-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.05em; font-weight: 700; color: #4f46e5;
+    margin-bottom: 14px; padding-bottom: 9px;
+    border-bottom: 2px solid #ede9fe;
+  }
+  .step-badge {
+    background: #4f46e5; color: white;
+    font-size: 0.78em; font-weight: 700;
+    padding: 2px 9px; border-radius: 20px; white-space: nowrap;
+  }
+
+  /* LAYOUT HELPERS */
+  .two-col { display: flex; gap: 20px; align-items: flex-start; }
+  .two-col .col-canvas { flex: 0 0 auto; }
+  .two-col .col-info   { flex: 1 1 auto; }
+
+  /* CANVAS CONTAINERS */
+  .canvas-wrap {
+    background: #fafafa;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: inline-block;
+  }
+  canvas { display: block; }
+
+  /* READOUT PANEL */
+  .readout {
+    background: #f5f3ff;
+    border: 1.5px solid #c4b5fd;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+  .readout-title { font-size: 0.78em; font-weight: 700; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .readout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .readout-item { text-align: center; }
+  .readout-item .r-label { font-size: 0.75em; color: #64748b; margin-bottom: 2px; }
+  .readout-item .r-val {
+    font-size: 1.7em; font-weight: 800;
+    font-family: 'Courier New', monospace;
+    transition: color 0.3s;
+  }
+  .readout-interp {
+    text-align: center;
+    font-size: 0.84em; font-weight: 600;
+    padding: 7px 10px; border-radius: 6px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* FORMULA BOX */
+  .formula-box {
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+  .formula-box .f-title { font-size: 0.78em; font-weight: 700; color: #475569; margin-bottom: 6px; }
+  .formula-box .f-eq {
+    font-family: 'Courier New', monospace;
+    font-size: 1.05em; color: #1e293b;
+    font-weight: 700; line-height: 1.6;
+  }
+
+  /* BUTTONS */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .btn {
+    padding: 6px 14px; border-radius: 6px; border: 1.5px solid;
+    font-size: 0.82em; font-weight: 700; cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    background: white;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn.indigo { border-color: #6366f1; color: #4338ca; }
+  .btn.indigo:hover, .btn.indigo.active { background: #eef2ff; }
+  .btn.green  { border-color: #22c55e; color: #15803d; }
+  .btn.green:hover, .btn.green.active { background: #f0fdf4; }
+  .btn.red    { border-color: #f87171; color: #b91c1c; }
+  .btn.red:hover, .btn.red.active { background: #fef2f2; }
+  .btn.gray   { border-color: #94a3b8; color: #475569; }
+  .btn.gray:hover, .btn.gray.active { background: #f1f5f9; }
+  .btn.orange { border-color: #fb923c; color: #c2410c; }
+  .btn.orange:hover, .btn.orange.active { background: #fff7ed; }
+
+  /* SLIDER */
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .slider-row label { font-size: 0.82em; font-weight: 700; color: #475569; white-space: nowrap; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    flex: 1; height: 6px; border-radius: 3px;
+    background: #e2e8f0; outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #4f46e5; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .slider-val {
+    font-family: 'Courier New', monospace;
+    font-size: 0.88em; font-weight: 700;
+    color: #4f46e5; min-width: 42px; text-align: right;
+  }
+
+  /* WORD COMPARISON SECTION */
+  .word-pair-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .pair-btn {
+    padding: 8px 10px; border-radius: 7px;
+    border: 1.5px solid #c4b5fd; background: white;
+    cursor: pointer; text-align: center;
+    transition: background 0.15s;
+  }
+  .pair-btn:hover { background: #f5f3ff; }
+  .pair-btn.active { background: #ede9fe; border-color: #7c3aed; }
+  .pair-btn .pair-words { font-size: 0.82em; font-weight: 700; color: #4c1d95; }
+  .pair-btn .pair-sim   { font-size: 1.1em; font-weight: 800; color: #7c3aed; }
+
+  /* COSINE METER */
+  .cos-meter-wrap { margin-bottom: 12px; }
+  .cos-meter-label { font-size: 0.78em; font-weight: 700; color: #475569; margin-bottom: 4px; }
+  .cos-meter-track {
+    height: 20px; background: #f1f5f9;
+    border-radius: 4px; overflow: hidden; position: relative;
+    border: 1px solid #e2e8f0;
+  }
+  .cos-meter-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.4s ease, background 0.4s ease;
+  }
+  .cos-meter-zero {
+    position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 2px; background: #94a3b8;
+  }
+
+  /* STEPS (Section 3) */
+  .step-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .step-tab {
+    padding: 6px 16px; border-radius: 6px;
+    border: 1.5px solid #c4b5fd; background: white;
+    font-size: 0.84em; font-weight: 700; color: #6d28d9;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .step-tab:hover { background: #f5f3ff; }
+  .step-tab.active { background: #4f46e5; color: white; border-color: #4f46e5; }
+
+  /* BAR CHART */
+  .bar-chart { padding: 8px 0; }
+  .bar-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .bar-label { font-size: 0.85em; font-weight: 700; color: #374151; min-width: 38px; text-align: right; }
+  .bar-bg {
+    flex: 1; height: 22px; background: #f1f5f9;
+    border-radius: 4px; overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .bar-val { font-family: 'Courier New', monospace; font-size: 0.82em; font-weight: 700; min-width: 36px; }
+
+  /* NOTE BOX */
+  .note-box {
+    background: #fffbeb; border-left: 4px solid #f59e0b;
+    border-radius: 0 6px 6px 0; padding: 9px 13px;
+    font-size: 0.83em; color: #78350f; line-height: 1.5; margin-top: 10px;
+  }
+
+  /* STEP CAPTION */
+  .step-caption {
+    background: #f5f3ff; border: 1px solid #ddd6fe;
+    border-radius: 7px; padding: 10px 14px;
+    font-size: 0.85em; color: #3730a3; line-height: 1.5;
+    margin-top: 10px;
+  }
+
+  @media print {
+    body { background: white; padding: 12px; }
+    .section { box-shadow: none; break-inside: avoid; }
+    .page-header { background: #4f46e5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    input[type=range] { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-header">
+  <h1>Vector Cosine Similarity</h1>
+  <div class="subtitle">How direction captures meaning in word embeddings</div>
+  <div class="author">Dr. Elbasheer &nbsp;|&nbsp; NLP / Machine Learning Series</div>
+</div>
+
+<!-- ================================================================
+     SECTION 1: DOT PRODUCT AND ANGLE
+================================================================ -->
+<div class="section">
+  <div class="section-title">
+    <span class="step-badge">1</span>
+    Dot Product and Angle: The Core Idea
+  </div>
+
+  <p style="font-size:0.88em; color:#475569; margin-bottom:14px;">
+    The <strong>dot product</strong> of two vectors measures how much they point in the same direction.
+    For unit vectors (length = 1), the dot product equals the cosine of the angle between them.
+    Rotate vector <strong style="color:#d97706;">B</strong> with the slider and watch what happens.
+  </p>
+
+  <div class="two-col">
+    <div class="col-canvas">
+      <div class="canvas-wrap">
+        <canvas id="c1" width="310" height="290"></canvas>
+      </div>
+    </div>
+    <div class="col-info">
+      <div class="formula-box">
+        <div class="f-title">Cosine Similarity Formula</div>
+        <div class="f-eq">cos(&theta;) = A&middot;B / (|A| &times; |B|)</div>
+        <div style="font-size:0.78em; color:#64748b; margin-top:5px;">
+          For unit vectors: cos(&theta;) = A&middot;B
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <label>Angle of B:</label>
+        <input type="range" id="angleSlider" min="0" max="360" value="45" step="1">
+        <span class="slider-val" id="angleDisplay">45&deg;</span>
+      </div>
+
+      <div class="readout">
+        <div class="readout-title">Live Readout</div>
+        <div class="readout-grid">
+          <div class="readout-item">
+            <div class="r-label">Angle &theta;</div>
+            <div class="r-val" id="r-angle" style="color:#4f46e5;">45&deg;</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Cosine Similarity</div>
+            <div class="r-val" id="r-cos" style="color:#16a34a;">0.71</div>
+          </div>
+        </div>
+        <div class="readout-interp" id="r-interp" style="background:#f0fdf4; color:#15803d;">
+          Similar direction &mdash; positive dot product
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn green" onclick="setAngle(0)">&#x1F7F0; Same (0&deg;)</button>
+        <button class="btn gray"  onclick="setAngle(90)">&#x22A5; Perpendicular (90&deg;)</button>
+        <button class="btn red"   onclick="setAngle(180)">&#x2194; Opposite (180&deg;)</button>
+        <button class="btn indigo" onclick="setAngle(45)">45&deg;</button>
+        <button class="btn indigo" onclick="setAngle(135)">135&deg;</button>
+      </div>
+
+      <div style="font-size:0.8em; color:#64748b; line-height:1.5;">
+        <strong style="color:#2563eb;">A</strong> = fixed reference vector.
+        <strong style="color:#d97706;">B</strong> = the vector you control.
+        Both are unit vectors (length = 1).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SECTION 2: WORD SIMILARITY
+================================================================ -->
+<div class="section">
+  <div class="section-title">
+    <span class="step-badge">2</span>
+    Word Vectors: Similar Meaning = Similar Direction
+  </div>
+
+  <p style="font-size:0.88em; color:#475569; margin-bottom:14px;">
+    In word embeddings, each word is represented as a vector. Words with related meanings tend to point in the same general direction.
+    Click a word pair to see their cosine similarity and the angle between their vectors.
+  </p>
+
+  <div class="two-col">
+    <div class="col-canvas">
+      <div class="canvas-wrap">
+        <canvas id="c2" width="380" height="330"></canvas>
+      </div>
+      <div class="note-box" style="max-width:380px;">
+        <strong>Note:</strong> These are illustrative 2D projections. Real word embeddings have 100 to 300 dimensions.
+      </div>
+    </div>
+    <div class="col-info">
+      <div style="font-size:0.82em; font-weight:700; color:#475569; margin-bottom:8px;">Click a pair to compare:</div>
+      <div class="word-pair-grid" id="pairGrid">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="readout" id="s2readout" style="margin-top:4px;">
+        <div class="readout-title">Similarity Readout</div>
+        <div style="text-align:center; margin-bottom:10px;">
+          <span style="font-size:0.9em; color:#4c1d95;" id="s2wordA">dog</span>
+          <span style="font-size:1.0em; color:#94a3b8; margin:0 8px;">vs</span>
+          <span style="font-size:0.9em; color:#4c1d95;" id="s2wordB">dog show</span>
+        </div>
+        <div class="readout-grid">
+          <div class="readout-item">
+            <div class="r-label">Angle</div>
+            <div class="r-val" id="s2angle" style="color:#4f46e5; font-size:1.4em;">21&deg;</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Cosine Similarity</div>
+            <div class="r-val" id="s2cos" style="color:#16a34a; font-size:1.4em;">0.93</div>
+          </div>
+        </div>
+        <div class="cos-meter-wrap" style="margin-top:10px;">
+          <div class="cos-meter-label">Similarity scale (-1 to +1)</div>
+          <div class="cos-meter-track" style="height:14px;">
+            <div class="cos-meter-zero"></div>
+            <div class="cos-meter-fill" id="s2meter" style="width:96%; background:#16a34a; margin-left:50%;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.72em; color:#94a3b8; margin-top:2px;">
+            <span>-1</span><span>0</span><span>+1</span>
+          </div>
+        </div>
+        <div class="readout-interp" id="s2interp" style="background:#f0fdf4; color:#15803d; margin-top:8px;">
+          Very similar meaning
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SECTION 3: PLURALITY DIRECTION
+================================================================ -->
+<div class="section">
+  <div class="section-title">
+    <span class="step-badge">3</span>
+    Discovering the Plurality Direction
+  </div>
+
+  <p style="font-size:0.88em; color:#475569; margin-bottom:14px;">
+    Word vectors encode grammar too. Subtracting <em>dog</em> from <em>dogs</em> extracts a
+    <strong>"plurality direction"</strong> in the embedding space. Any word that aligns with this
+    direction has a higher plurality score. Watch how <em>one, two, three, four</em> rank differently.
+  </p>
+
+  <div class="step-tabs">
+    <button class="step-tab active" id="tab1" onclick="setStep(1)">Step 1: dog vs dogs</button>
+    <button class="step-tab"        id="tab2" onclick="setStep(2)">Step 2: Extract direction</button>
+    <button class="step-tab"        id="tab3" onclick="setStep(3)">Step 3: Rank by plurality</button>
+  </div>
+
+  <div class="two-col" style="align-items:flex-start;">
+    <div class="col-canvas">
+      <div class="canvas-wrap">
+        <canvas id="c3" width="420" height="340"></canvas>
+      </div>
+    </div>
+    <div class="col-info">
+      <!-- Step 3 bar chart shown only in step 3 -->
+      <div id="barPanel" style="display:none;">
+        <div style="font-size:0.82em; font-weight:700; color:#475569; margin-bottom:10px;">
+          Cosine similarity with the plurality direction:
+        </div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">one</span>
+            <div class="bar-bg"><div class="bar-fill" id="bar1" style="width:0%; background:#93c5fd;"></div></div>
+            <span class="bar-val" id="bv1" style="color:#1d4ed8;">0.00</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">two</span>
+            <div class="bar-bg"><div class="bar-fill" id="bar2" style="width:0%; background:#60a5fa;"></div></div>
+            <span class="bar-val" id="bv2" style="color:#1d4ed8;">0.00</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">three</span>
+            <div class="bar-bg"><div class="bar-fill" id="bar3" style="width:0%; background:#3b82f6;"></div></div>
+            <span class="bar-val" id="bv3" style="color:#1d4ed8;">0.00</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">four</span>
+            <div class="bar-bg"><div class="bar-fill" id="bar4" style="width:0%; background:#1d4ed8;"></div></div>
+            <span class="bar-val" id="bv4" style="color:#1d4ed8;">0.00</span>
+          </div>
+        </div>
+        <div style="font-size:0.8em; color:#64748b; margin-top:4px; line-height:1.5;">
+          Higher score = more aligned with the plural direction.
+        </div>
+      </div>
+
+      <!-- Step info panels -->
+      <div id="stepInfo1" class="step-caption">
+        <strong>What we see:</strong> <em>dog</em> and <em>dogs</em> point in the same general
+        direction but are not identical. The shift from dog to dogs is small but consistent
+        across all singular/plural pairs (cat/cats, city/cities, etc.).
+      </div>
+      <div id="stepInfo2" class="step-caption" style="display:none;">
+        <strong>The key operation:</strong><br>
+        <code style="font-size:1.0em; font-weight:700; color:#4f46e5;">
+          plurality = dogs &minus; dog
+        </code><br><br>
+        The result is a direction vector. It points "from singular to plural." This direction
+        is consistent across many word pairs in the embedding space.
+      </div>
+      <div id="stepInfo3" class="step-caption" style="display:none;">
+        <strong>Ranking by plurality:</strong> We measure how much each number word aligns
+        with the plurality direction using cosine similarity. Words associated with larger
+        counts score higher because they embed more "plural" context.
+      </div>
+
+      <!-- Operation box for step 2 -->
+      <div id="opBox" style="display:none; margin-top:10px; background:#f5f3ff; border:1.5px solid #c4b5fd; border-radius:8px; padding:13px 15px;">
+        <div style="font-size:0.8em; font-weight:700; color:#6d28d9; margin-bottom:8px;">Vector arithmetic:</div>
+        <div style="font-family:'Courier New', monospace; font-size:0.95em; color:#1e293b; line-height:1.9;">
+          dogs &nbsp;= [0.82,&nbsp;0.62]<br>
+          dog &nbsp;&nbsp;= [0.82,&nbsp;0.22]<br>
+          <span style="color:#7c3aed; font-weight:700;">dogs &minus; dog = [0.00,&nbsp;0.40]</span><br>
+          <span style="color:#4f46e5;">normalized &nbsp;= [0.00,&nbsp;1.00]</span>
+        </div>
+        <div style="font-size:0.78em; color:#64748b; margin-top:6px;">
+          The plurality direction points straight up in this 2D space.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SECTION 4: SUMMARY
+================================================================ -->
+<div class="section">
+  <div class="section-title">
+    <span class="step-badge">Summary</span>
+    What Cosine Similarity Captures
+  </div>
+  <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:14px;">
+    <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:8px; padding:13px; text-align:center;">
+      <div style="font-size:1.5em; margin-bottom:6px;">&#x2191;&#x2191;</div>
+      <div style="font-weight:700; color:#15803d; margin-bottom:4px;">cos &approx; +1</div>
+      <div style="font-size:0.82em; color:#475569;">Same direction. Words are closely related in meaning.</div>
+    </div>
+    <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px; padding:13px; text-align:center;">
+      <div style="font-size:1.5em; margin-bottom:6px;">&#x2197;&#x2192;</div>
+      <div style="font-weight:700; color:#475569; margin-bottom:4px;">cos &approx; 0</div>
+      <div style="font-size:0.82em; color:#475569;">Perpendicular. Unrelated concepts with no shared context.</div>
+    </div>
+    <div style="background:#fef2f2; border:1.5px solid #fca5a5; border-radius:8px; padding:13px; text-align:center;">
+      <div style="font-size:1.5em; margin-bottom:6px;">&#x2191;&#x2193;</div>
+      <div style="font-weight:700; color:#b91c1c; margin-bottom:4px;">cos &approx; -1</div>
+      <div style="font-size:0.82em; color:#475569;">Opposite direction. Words appear in contrasting contexts.</div>
+    </div>
+  </div>
+  <div style="background:#f5f3ff; border:1.5px solid #c4b5fd; border-radius:8px; padding:12px 16px; margin-top:14px; text-align:center; font-size:0.88em; color:#3730a3; font-weight:600; line-height:1.6;">
+    Direction encodes meaning. Arithmetic on directions encodes relationships.<br>
+    <span style="font-weight:400; color:#475569;">dogs &minus; dog &asymp; cats &minus; cat &asymp; cities &minus; city &nbsp;(the same plurality shift)</span>
+  </div>
+</div>
+
+<!-- ================================================================
+     JAVASCRIPT
+================================================================ -->
+<script>
+// ---- MATH HELPERS -------------------------------------------------------
+function dot(a, b)   { return a[0]*b[0] + a[1]*b[1]; }
+function mag(v)      { return Math.sqrt(v[0]*v[0] + v[1]*v[1]); }
+function norm(v)     { const m = mag(v); return m > 1e-9 ? [v[0]/m, v[1]/m] : [0,0]; }
+function cosSim(a,b) { return dot(norm(a), norm(b)); }
+function sub(a,b)    { return [a[0]-b[0], a[1]-b[1]]; }
+function toDeg(r)    { return r * 180 / Math.PI; }
+function toRad(d)    { return d * Math.PI / 180; }
+// Canvas coordinate transform: embedding (ex,ey) -> canvas pixel
+function toC(ox, oy, sc, ex, ey) { return [ox + ex*sc, oy - ey*sc]; }
+
+// ---- DRAW ARROW ---------------------------------------------------------
+function drawArrow(ctx, x1, y1, x2, y2, color, lw, headLen) {
+  lw = lw || 2.5; headLen = headLen || 11;
+  const angle = Math.atan2(y2-y1, x2-x1);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headLen*Math.cos(angle - Math.PI/6), y2 - headLen*Math.sin(angle - Math.PI/6));
+  ctx.lineTo(x2 - headLen*Math.cos(angle + Math.PI/6), y2 - headLen*Math.sin(angle + Math.PI/6));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function labelAt(ctx, x, y, text, color, size, bold) {
+  ctx.save();
+  ctx.fillStyle = color || '#1e293b';
+  ctx.font = (bold !== false ? 'bold ' : '') + (size||13) + "px 'Segoe UI', sans-serif";
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+// ---- SECTION 1: ANGLE DEMO ----------------------------------------------
+const c1 = document.getElementById('c1');
+const ctx1 = c1.getContext('2d');
+const CX = 155, CY = 145, R = 115;
+
+function drawAngleDemo(deg) {
+  const W = c1.width, H = c1.height;
+  ctx1.clearRect(0, 0, W, H);
+
+  const thetaB = toRad(deg);
+  const cosVal = Math.cos(thetaB);  // dot product of A=[1,0] and B=[cos,sin]
+
+  // Background region tint based on sign
+  const bgColor = cosVal > 0.05 ? 'rgba(220,252,231,0.35)' : cosVal < -0.05 ? 'rgba(254,226,226,0.35)' : 'rgba(241,245,249,0.5)';
+  ctx1.fillStyle = bgColor;
+  ctx1.fillRect(0, 0, W, H);
+
+  // Grid lines (light)
+  ctx1.save();
+  ctx1.strokeStyle = '#e2e8f0'; ctx1.lineWidth = 1;
+  ctx1.setLineDash([4,4]);
+  ctx1.beginPath(); ctx1.moveTo(CX-R-10, CY); ctx1.lineTo(CX+R+10, CY); ctx1.stroke();
+  ctx1.beginPath(); ctx1.moveTo(CX, CY-R-10); ctx1.lineTo(CX, CY+R+10); ctx1.stroke();
+  ctx1.setLineDash([]);
+  ctx1.restore();
+
+  // Unit circle
+  ctx1.save();
+  ctx1.strokeStyle = '#cbd5e1'; ctx1.lineWidth = 1.5;
+  ctx1.beginPath(); ctx1.arc(CX, CY, R, 0, Math.PI*2); ctx1.stroke();
+  ctx1.restore();
+
+  // Arc between A and B
+  const arcColor = cosVal > 0.05 ? '#16a34a' : cosVal < -0.05 ? '#dc2626' : '#94a3b8';
+  ctx1.save();
+  ctx1.strokeStyle = arcColor; ctx1.lineWidth = 4;
+  // Arc from 0 to -thetaB (canvas: 0 is right, angles go clockwise)
+  const startA = 0;
+  const endA = -thetaB;
+  ctx1.beginPath();
+  ctx1.arc(CX, CY, 36, startA, endA, thetaB > 0);
+  ctx1.stroke();
+  ctx1.restore();
+
+  // Vector A (fixed, blue)
+  const ax2 = CX + R, ay2 = CY;
+  drawArrow(ctx1, CX, CY, ax2, ay2, '#2563eb', 3, 13);
+  labelAt(ctx1, ax2+6, ay2-4, 'A', '#2563eb', 14);
+
+  // Vector B (orange)
+  const bx2 = CX + R*Math.cos(thetaB);
+  const by2 = CY - R*Math.sin(thetaB);
+  drawArrow(ctx1, CX, CY, bx2, by2, '#d97706', 3, 13);
+  labelAt(ctx1, bx2+6, by2-4, 'B', '#d97706', 14);
+
+  // Angle label inside arc
+  const midA = -thetaB / 2;
+  const lr = 50;
+  ctx1.save();
+  ctx1.fillStyle = arcColor;
+  ctx1.font = "bold 12px 'Segoe UI', sans-serif";
+  ctx1.fillText(deg + '\u00b0', CX + lr*Math.cos(midA) - 8, CY + lr*Math.sin(midA) + 5);
+  ctx1.restore();
+
+  // Dot product projection dashed line (foot of B on A axis)
+  const projX = CX + R*Math.cos(thetaB);
+  ctx1.save();
+  ctx1.strokeStyle = '#94a3b8'; ctx1.lineWidth = 1.5;
+  ctx1.setLineDash([4,3]);
+  ctx1.beginPath(); ctx1.moveTo(bx2, by2); ctx1.lineTo(projX, CY); ctx1.stroke();
+  ctx1.setLineDash([]);
+  ctx1.restore();
+
+  // Dot product tick on A axis
+  ctx1.save();
+  ctx1.strokeStyle = arcColor; ctx1.lineWidth = 3;
+  ctx1.beginPath(); ctx1.moveTo(projX, CY-6); ctx1.lineTo(projX, CY+6); ctx1.stroke();
+  ctx1.restore();
+
+  // Origin dot
+  ctx1.save();
+  ctx1.fillStyle = '#334155';
+  ctx1.beginPath(); ctx1.arc(CX, CY, 4, 0, Math.PI*2); ctx1.fill();
+  ctx1.restore();
+
+  return cosVal;
+}
+
+function interpText(cos) {
+  if (cos > 0.85)  return { text: 'Same direction &mdash; very high similarity',    bg: '#f0fdf4', col: '#15803d' };
+  if (cos > 0.5)   return { text: 'Similar direction &mdash; positive similarity',   bg: '#f0fdf4', col: '#15803d' };
+  if (cos > 0.1)   return { text: 'Slightly similar &mdash; small positive value',   bg: '#f0fdf4', col: '#16a34a' };
+  if (cos > -0.1)  return { text: 'Perpendicular &mdash; no similarity (cos = 0)',   bg: '#f1f5f9', col: '#475569' };
+  if (cos > -0.5)  return { text: 'Diverging direction &mdash; negative similarity', bg: '#fef2f2', col: '#b91c1c' };
+  if (cos > -0.85) return { text: 'Mostly opposite &mdash; strong negative value',   bg: '#fef2f2', col: '#dc2626' };
+  return                  { text: 'Opposite direction &mdash; maximum dissimilarity', bg: '#fef2f2', col: '#dc2626' };
+}
+
+function updateS1(deg) {
+  const cosVal = drawAngleDemo(deg);
+  const c = cosVal.toFixed(2);
+  const cosColor = cosVal > 0.05 ? '#16a34a' : cosVal < -0.05 ? '#dc2626' : '#94a3b8';
+  document.getElementById('r-angle').textContent = deg + '\u00b0';
+  document.getElementById('r-cos').textContent   = c;
+  document.getElementById('r-cos').style.color   = cosColor;
+  document.getElementById('angleDisplay').textContent = deg + '\u00b0';
+  const interp = interpText(cosVal);
+  const el = document.getElementById('r-interp');
+  el.innerHTML = interp.text;
+  el.style.background = interp.bg;
+  el.style.color = interp.col;
+}
+
+function setAngle(d) {
+  document.getElementById('angleSlider').value = d;
+  updateS1(d);
+}
+
+document.getElementById('angleSlider').addEventListener('input', function() {
+  updateS1(parseInt(this.value));
+});
+
+// init section 1
+updateS1(45);
+
+
+// ---- SECTION 2: WORD SIMILARITY -----------------------------------------
+const c2 = document.getElementById('c2');
+const ctx2 = c2.getContext('2d');
+const S2_OX = 55, S2_OY = 305, S2_SC = 270;
+
+const words2 = {
+  'dog':      { v: [0.82, 0.22], color: '#2563eb' },
+  'dog show': { v: [0.68, 0.52], color: '#0891b2' },
+  'cat':      { v: [0.50, 0.55], color: '#7c3aed' },
+  'airplane': { v: [0.15, 0.88], color: '#6b7280' },
+};
+
+const pairs = [
+  { a: 'dog', b: 'dog show',  label: 'dog vs dog show' },
+  { a: 'dog', b: 'cat',       label: 'dog vs cat'      },
+  { a: 'dog', b: 'airplane',  label: 'dog vs airplane' },
+  { a: 'cat', b: 'dog show',  label: 'cat vs dog show' },
+  { a: 'cat', b: 'airplane',  label: 'cat vs airplane' },
+  { a: 'dog show', b: 'airplane', label: 'dog show vs airplane' },
+];
+
+let activePair = 0;
+
+function cosSimWords(a, b) {
+  return cosSim(words2[a].v, words2[b].v);
+}
+
+function angleWordsDeg(a, b) {
+  const c = Math.min(1, Math.max(-1, cosSimWords(a, b)));
+  return Math.round(toDeg(Math.acos(c)));
+}
+
+function drawWords2(highlightA, highlightB) {
+  ctx2.clearRect(0, 0, c2.width, c2.height);
+
+  // Background
+  ctx2.fillStyle = '#fafafa';
+  ctx2.fillRect(0, 0, c2.width, c2.height);
+
+  // Axes
+  ctx2.save();
+  ctx2.strokeStyle = '#e2e8f0'; ctx2.lineWidth = 1; ctx2.setLineDash([4,4]);
+  ctx2.beginPath(); ctx2.moveTo(S2_OX-5, S2_OY); ctx2.lineTo(c2.width-10, S2_OY); ctx2.stroke();
+  ctx2.beginPath(); ctx2.moveTo(S2_OX, 10); ctx2.lineTo(S2_OX, S2_OY+5); ctx2.stroke();
+  ctx2.setLineDash([]); ctx2.restore();
+
+  // Axis labels
+  labelAt(ctx2, c2.width-50, S2_OY+14, 'dim 1', '#94a3b8', 11);
+  labelAt(ctx2, S2_OX-5, 18, 'dim 2', '#94a3b8', 11);
+
+  // Draw angle arc if pair selected
+  if (highlightA && highlightB) {
+    const vA = words2[highlightA].v, vB = words2[highlightB].v;
+    const angA = Math.atan2(vA[1], vA[0]);
+    const angB = Math.atan2(vB[1], vB[0]);
+    const cs = cosSimWords(highlightA, highlightB);
+    const arcCol = cs > 0.5 ? '#16a34a' : cs > 0.1 ? '#f59e0b' : '#dc2626';
+    ctx2.save();
+    ctx2.strokeStyle = arcCol + '99'; ctx2.lineWidth = 3;
+    ctx2.beginPath(); ctx2.arc(S2_OX, S2_OY, 42, -angA, -angB, angB > angA); ctx2.stroke();
+    ctx2.restore();
+  }
+
+  // Draw each word vector
+  for (const [name, w] of Object.entries(words2)) {
+    const isHL = (name === highlightA || name === highlightB);
+    const [cx2, cy2] = toC(S2_OX, S2_OY, S2_SC, w.v[0]*0.92, w.v[1]*0.92);
+    const lw = isHL ? 3.5 : 2;
+    const col = isHL ? w.color : w.color + '88';
+    drawArrow(ctx2, S2_OX, S2_OY, cx2, cy2, col, lw, 12);
+
+    // Label with background
+    const nm = norm(w.v);
+    const lx = S2_OX + nm[0]*S2_SC*0.97 + 6;
+    const ly = S2_OY - nm[1]*S2_SC*0.97 - 2;
+    ctx2.save();
+    ctx2.font = (isHL ? 'bold' : '') + " 13px 'Segoe UI', sans-serif";
+    const tw = ctx2.measureText(name).width + 8;
+    ctx2.fillStyle = isHL ? 'white' : '#f8fafc';
+    ctx2.strokeStyle = isHL ? w.color : '#cbd5e1';
+    ctx2.lineWidth = 1.5;
+    roundRect(ctx2, lx-3, ly-13, tw, 18, 4);
+    ctx2.fill(); ctx2.stroke();
+    ctx2.fillStyle = isHL ? w.color : '#64748b';
+    ctx2.fillText(name, lx+1, ly);
+    ctx2.restore();
+  }
+
+  // Origin dot
+  ctx2.save(); ctx2.fillStyle = '#334155';
+  ctx2.beginPath(); ctx2.arc(S2_OX, S2_OY, 4, 0, Math.PI*2); ctx2.fill(); ctx2.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+function selectPair(idx) {
+  activePair = idx;
+  const p = pairs[idx];
+  const cs = cosSimWords(p.a, p.b);
+  const ad = angleWordsDeg(p.a, p.b);
+  const csStr = cs.toFixed(2);
+
+  document.getElementById('s2wordA').textContent = p.a;
+  document.getElementById('s2wordB').textContent = p.b;
+  document.getElementById('s2angle').textContent = ad + '\u00b0';
+  document.getElementById('s2cos').textContent   = csStr;
+
+  // Color
+  const col = cs > 0.7 ? '#16a34a' : cs > 0.3 ? '#d97706' : '#dc2626';
+  document.getElementById('s2cos').style.color   = col;
+  document.getElementById('s2angle').style.color = '#4f46e5';
+
+  // Meter: fill = 50% + (cs * 50%)
+  const pct = Math.round((cs + 1) / 2 * 100);
+  const fill = Math.max(0, cs) * 50;  // right of center
+  const meterFill = document.getElementById('s2meter');
+  meterFill.style.width = fill + '%';
+  meterFill.style.background = col;
+  meterFill.style.marginLeft = '50%';
+
+  // Interp text
+  const interp = interpText(cs);
+  const el = document.getElementById('s2interp');
+  el.innerHTML = interp.text;
+  el.style.background = interp.bg;
+  el.style.color = interp.col;
+
+  // Redraw canvas
+  drawWords2(p.a, p.b);
+
+  // Update buttons
+  document.querySelectorAll('.pair-btn').forEach((b,i) => {
+    b.classList.toggle('active', i === idx);
+  });
+}
+
+// Build pair buttons
+const grid = document.getElementById('pairGrid');
+pairs.forEach((p, i) => {
+  const cs = cosSimWords(p.a, p.b);
+  const col = cs > 0.7 ? '#16a34a' : cs > 0.3 ? '#d97706' : '#dc2626';
+  const btn = document.createElement('div');
+  btn.className = 'pair-btn';
+  btn.innerHTML = `<div class="pair-words">${p.a} &amp; ${p.b}</div>
+                   <div class="pair-sim" style="color:${col}">${cs.toFixed(2)}</div>`;
+  btn.onclick = () => selectPair(i);
+  grid.appendChild(btn);
+});
+
+// init section 2
+selectPair(0);
+
+
+// ---- SECTION 3: PLURALITY -----------------------------------------------
+const c3 = document.getElementById('c3');
+const ctx3 = c3.getContext('2d');
+const S3_OX = 60, S3_OY = 300, S3_SC = 255;
+
+const vDog     = [0.82, 0.22];
+const vDogs    = [0.82, 0.62];
+const vPlural  = sub(vDogs, vDog);  // [0, 0.40]
+const vPluralN = norm(vPlural);     // [0, 1]
+const vOne     = [0.60, 0.15];
+const vTwo     = [0.60, 0.35];
+const vThree   = [0.60, 0.55];
+const vFour    = [0.60, 0.75];
+
+const numbers = [
+  { name:'one',   v: vOne,   color:'#93c5fd', barId:'bar1', valId:'bv1' },
+  { name:'two',   v: vTwo,   color:'#60a5fa', barId:'bar2', valId:'bv2' },
+  { name:'three', v: vThree, color:'#3b82f6', barId:'bar3', valId:'bv3' },
+  { name:'four',  v: vFour,  color:'#1d4ed8', barId:'bar4', valId:'bv4' },
+];
+
+function drawAxes3() {
+  ctx3.save();
+  ctx3.strokeStyle = '#e2e8f0'; ctx3.lineWidth = 1; ctx3.setLineDash([4,4]);
+  ctx3.beginPath(); ctx3.moveTo(S3_OX-5, S3_OY); ctx3.lineTo(c3.width-10, S3_OY); ctx3.stroke();
+  ctx3.beginPath(); ctx3.moveTo(S3_OX, 10); ctx3.lineTo(S3_OX, S3_OY+5); ctx3.stroke();
+  ctx3.setLineDash([]); ctx3.restore();
+  labelAt(ctx3, c3.width-50, S3_OY+14, 'dim 1', '#94a3b8', 11);
+  labelAt(ctx3, S3_OX-5, 18, 'dim 2', '#94a3b8', 11);
+  ctx3.save(); ctx3.fillStyle = '#334155';
+  ctx3.beginPath(); ctx3.arc(S3_OX, S3_OY, 4, 0, Math.PI*2); ctx3.fill(); ctx3.restore();
+}
+
+function drawVecLabeled(ctx, ox, oy, sc, v, color, label, lw, faded) {
+  const alpha = faded ? 0.35 : 1;
+  const [x2, y2] = toC(ox, oy, sc, v[0]*0.88, v[1]*0.88);
+  ctx.save(); ctx.globalAlpha = alpha;
+  drawArrow(ctx, ox, oy, x2, y2, color, lw||2.5, 12);
+  const nx = norm(v);
+  const lx = ox + nx[0]*sc*0.91 + 5;
+  const ly = oy - nx[1]*sc*0.91 + 4;
+  const tw = ctx.measureText ? 0 : 0;
+  ctx.font = "bold 13px 'Segoe UI', sans-serif";
+  const w = ctx.measureText(label).width + 8;
+  ctx.fillStyle = 'white'; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  roundRect(ctx, lx-3, ly-13, w, 18, 4);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.fillText(label, lx+1, ly);
+  ctx.restore();
+}
+
+let currentStep = 1;
+
+function drawStep(step) {
+  ctx3.clearRect(0, 0, c3.width, c3.height);
+  ctx3.fillStyle = '#fafafa'; ctx3.fillRect(0, 0, c3.width, c3.height);
+  drawAxes3();
+
+  if (step === 1) {
+    // Show dog and dogs
+    drawVecLabeled(ctx3, S3_OX, S3_OY, S3_SC, vDog,  '#2563eb', 'dog',  3, false);
+    drawVecLabeled(ctx3, S3_OX, S3_OY, S3_SC, vDogs, '#0891b2', 'dogs', 3, false);
+    // Dashed arrow from tip of dog to tip of dogs
+    const [dx1,dy1] = toC(S3_OX, S3_OY, S3_SC, vDog[0]*0.88,  vDog[1]*0.88);
+    const [dx2,dy2] = toC(S3_OX, S3_OY, S3_SC, vDogs[0]*0.88, vDogs[1]*0.88);
+    ctx3.save();
+    ctx3.strokeStyle = '#94a3b8'; ctx3.lineWidth = 1.5; ctx3.setLineDash([5,3]);
+    ctx3.beginPath(); ctx3.moveTo(dx1,dy1); ctx3.lineTo(dx2,dy2); ctx3.stroke();
+    ctx3.setLineDash([]); ctx3.restore();
+  }
+
+  if (step === 2) {
+    // Show dog, dogs faded + plurality arrow prominent
+    drawVecLabeled(ctx3, S3_OX, S3_OY, S3_SC, vDog,  '#2563eb', 'dog',  2, true);
+    drawVecLabeled(ctx3, S3_OX, S3_OY, S3_SC, vDogs, '#0891b2', 'dogs', 2, true);
+    // Plurality direction from origin (scaled to 0.75 of full unit)
+    const pScale = 0.75;
+    const [px2,py2] = toC(S3_OX, S3_OY, S3_SC, vPluralN[0]*pScale, vPluralN[1]*pScale);
+    drawArrow(ctx3, S3_OX, S3_OY, px2, py2, '#7c3aed', 3.5, 13);
+    // Label
+    ctx3.save();
+    ctx3.font = "bold 13px 'Segoe UI', sans-serif";
+    const lbl = 'plurality direction';
+    const tw = ctx3.measureText(lbl).width + 10;
+    ctx3.fillStyle = 'white'; ctx3.strokeStyle = '#7c3aed'; ctx3.lineWidth = 1.5;
+    roundRect(ctx3, px2-tw/2, py2-28, tw, 18, 4);
+    ctx3.fill(); ctx3.stroke();
+    ctx3.fillStyle = '#7c3aed'; ctx3.fillText(lbl, px2-tw/2+5, py2-14);
+    ctx3.restore();
+    // Show subtraction annotation
+    const [tx1,ty1] = toC(S3_OX, S3_OY, S3_SC, vDog[0]*0.88, vDog[1]*0.88);
+    const [tx2,ty2] = toC(S3_OX, S3_OY, S3_SC, vDogs[0]*0.88, vDogs[1]*0.88);
+    ctx3.save();
+    ctx3.strokeStyle = '#7c3aed88'; ctx3.lineWidth = 1; ctx3.setLineDash([4,3]);
+    ctx3.beginPath(); ctx3.moveTo(tx1,ty1); ctx3.lineTo(tx2,ty2); ctx3.stroke();
+    ctx3.setLineDash([]); ctx3.restore();
+  }
+
+  if (step === 3) {
+    // Show plurality direction faded + number words
+    const pScale = 0.75;
+    const [px2,py2] = toC(S3_OX, S3_OY, S3_SC, vPluralN[0]*pScale, vPluralN[1]*pScale);
+    ctx3.save(); ctx3.globalAlpha = 0.45;
+    drawArrow(ctx3, S3_OX, S3_OY, px2, py2, '#7c3aed', 3, 12);
+    ctx3.globalAlpha = 1;
+    ctx3.font = "11px 'Segoe UI', sans-serif"; ctx3.fillStyle = '#7c3aed';
+    ctx3.fillText('plurality', px2+6, py2-4);
+    ctx3.restore();
+
+    // Draw number word vectors
+    numbers.forEach(n => {
+      drawVecLabeled(ctx3, S3_OX, S3_OY, S3_SC, n.v, n.color, n.name, 2.5, false);
+      // Projection dashed line onto y-axis (which IS the plurality direction)
+      const [vx2,vy2] = toC(S3_OX, S3_OY, S3_SC, n.v[0]*0.88, n.v[1]*0.88);
+      // Foot of perpendicular on y-axis: x=S3_OX
+      const footY = vy2;
+      ctx3.save();
+      ctx3.strokeStyle = n.color + '55'; ctx3.lineWidth = 1.2; ctx3.setLineDash([3,3]);
+      ctx3.beginPath(); ctx3.moveTo(vx2, vy2); ctx3.lineTo(S3_OX, footY); ctx3.stroke();
+      ctx3.setLineDash([]); ctx3.restore();
+      // Tick mark
+      ctx3.save();
+      ctx3.strokeStyle = n.color; ctx3.lineWidth = 2;
+      ctx3.beginPath(); ctx3.moveTo(S3_OX-5, footY); ctx3.lineTo(S3_OX+5, footY); ctx3.stroke();
+      ctx3.restore();
+    });
+  }
+}
+
+function setStep(s) {
+  currentStep = s;
+  [1,2,3].forEach(i => {
+    document.getElementById('tab'+i).classList.toggle('active', i===s);
+    const si = document.getElementById('stepInfo'+i);
+    if (si) si.style.display = i===s ? 'block' : 'none';
+  });
+  document.getElementById('opBox').style.display   = s===2 ? 'block' : 'none';
+  document.getElementById('barPanel').style.display = s===3 ? 'block' : 'none';
+  drawStep(s);
+  if (s === 3) updateBars();
+}
+
+function updateBars() {
+  numbers.forEach(n => {
+    const cs = cosSim(n.v, vPluralN);
+    const pct = Math.round(cs * 100);
+    document.getElementById(n.barId).style.width = pct + '%';
+    document.getElementById(n.valId).textContent  = cs.toFixed(2);
+  });
+}
+
+// init section 3
+setStep(1);
+</script>
+</body>
+</html>
