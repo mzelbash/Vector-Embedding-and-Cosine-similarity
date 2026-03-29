@@ -1,5 +1,9 @@
 # Vector Cosine Similarity: Interactive Explainer
 
+#Visit my Github page to see this interative demo
+
+https://mzelbash.github.io/Vector-Embedding-and-Cosine-similarity/
+
 An interactive, self-contained HTML file that teaches vector cosine similarity through word embedding examples. No libraries, no build step — open the file in any browser.
 
 ## Demo
