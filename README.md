@@ -1,6 +1,6 @@
 # Vector Cosine Similarity: Interactive Explainer
 
-#Visit my Github page to see this interative demo
+# Visit my Github page to see this interative demo
 
 https://mzelbash.github.io/Vector-Embedding-and-Cosine-similarity/
 
