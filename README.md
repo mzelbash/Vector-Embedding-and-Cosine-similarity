@@ -26,7 +26,7 @@ Step-by-step demonstration of vector arithmetic on word embeddings:
 ## Usage
 
 ```
-open Vector_Cosine_Similarity.html
+open index.html
 ```
 
 No server needed. Works in Chrome, Edge, and Firefox.
